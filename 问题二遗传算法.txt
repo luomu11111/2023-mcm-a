@@ -1,0 +1,79 @@
+import threading
+import random
+from 问题二功率计算 import *
+# 定义遗传算法的参数
+POPULATION_SIZE = 10
+P_CROSSOVER = 0.8
+P_MUTATION = 0.1
+MAX_GENERATIONS = 10
+
+# 这是一个简单的适应度函数，可以根据具体问题来定义
+def fitness(individual):
+    print("传入参数",sum(individual))
+    a,b=(test((0, sum(individual))))
+    x= 0
+    if b <60000:
+      x= 0
+    else :
+      x= a
+    print("输出功率",x )
+    return x
+# 这是一个简单的遗传算法个体
+class Individual:
+    def __init__(self, data):
+        self.data = data
+        self.fitness = fitness(data)
+
+    def crossover(self, other):
+        # 按概率P_CROSSOVER进行交叉
+        if random.random() < P_CROSSOVER:
+            # 随机选择交叉点
+            crossover_point = random.randint(1, len(self.data) - 1)
+            # 交叉操作
+            child_data = self.data[:crossover_point] + other.data[crossover_point:]
+            return Individual(child_data)
+        else:
+            return self
+
+    def mutate(self):
+        # 按概率P_MUTATION进行突变
+        if random.random() < P_MUTATION:
+            # 随机选择一个基因进行突变
+            mutate_point = random.randint(0, len(self.data) - 1)
+            # 突变操作
+            self.data[mutate_point] = random.randint(0, 1)
+            self.fitness = fitness(self.data)
+
+# 多线程遗传算法的主程序
+def genetic_algorithm():
+    # 初始种群
+    population = [([random.randint(0, 1) for _ in range(POPULATION_SIZE)], random.random()) for _ in range(POPULATION_SIZE)]
+    for generation in range(MAX_GENERATIONS):
+        print("Generation:", generation)
+        # 计算种群中每个个体的适应度
+        for individual in population:
+            individual[1] = fitness(individual[0])
+        # 按适应度从高到低排序种群
+        population.sort(key=lambda x: x[1], reverse=True)
+        # 选择前一半的个体作为父代
+        parents = population[:len(population) // 2]
+        # 生成下一代种群
+        children = []
+        for i in range(len(population) // 2):
+            parent1 = parents[i]
+            parent2 = random.choice(parents)
+            while parent1 == parent2:  # 避免选择同一个父代
+                child1 = parent1[0].crossover(parent2[0]).mutate()
+                child2 = parent1[0].crossover(parent2[0]).mutate()
+            children.append((child1, child2))
+        # 将下一代种群和父代合并，并随机打乱顺序形成新种群
+        population = [(random.choice([child1, child2]), random.random()) for child1, child2 in children] + parents
+    # 返回最后一代种群中适应度最高的个体
+    return max(population, key=lambda x: x[1])[0]
+
+if __name__ == "__main__":
+    # 使用多线程进行遗传算法运算，这里使用两个线程作为示例，实际使用时可以根据需要增加线程数或者使用进程（通过`multiprocessing`模块）来并行执行遗传算法的不同部分。
+    threads = []
+    for i in range(10):  # 增加线程数，例如增加到4，可以将这个数字改为4。
+        thread = threading.Thread(target=genetic_algorithm)  # 创建新线程，将遗传算法作为目标函数。
+        thread.start()  # 启动线程。
